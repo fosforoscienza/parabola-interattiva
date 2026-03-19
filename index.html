@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La Parabola — Fosforo Scienza</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-wrap">
+        <span class="logo-icon">⚗️</span>
+        <span class="logo-text">Fosforo<strong>Scienza</strong></span>
+      </div>
+      <nav>
+        <a href="#teoria">Teoria</a>
+        <a href="#grafico">Grafico</a>
+        <a href="#proprieta">Proprietà</a>
+        <a href="#applicazioni">Applicazioni</a>
+        <a href="#quiz">Quiz</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>La <span class="accent">Parabola</span></h1>
+      <p class="subtitle">Esplora la curva più elegante dell'algebra: comprendi, visualizza e sperimenta</p>
+      <a href="#teoria" class="btn-primary">Inizia a esplorare ↓</a>
+    </div>
+    <canvas id="hero-canvas"></canvas>
+  </section>
+
+  <!-- TEORIA -->
+  <section id="teoria" class="section section-light">
+    <div class="container">
+      <h2 class="section-title">Cos'è una Parabola?</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-icon">📐</div>
+          <h3>Definizione geometrica</h3>
+          <p>La parabola è il <strong>luogo geometrico</strong> dei punti equidistanti da un punto fisso detto <em>fuoco</em> F e da una retta fissa detta <em>direttrice</em> d.</p>
+          <div class="formula-box">
+            |PF| = |Pd|
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <h3>Equazione canonica</h3>
+          <p>La forma standard di una parabola con asse di simmetria verticale è:</p>
+          <div class="formula-box">
+            y = ax² + bx + c
+          </div>
+          <p>dove <em>a ≠ 0</em> determina apertura e larghezza.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔑</div>
+          <h3>Elementi fondamentali</h3>
+          <ul class="elements-list">
+            <li><span class="dot vertex"></span> <strong>Vertice V</strong> — punto di minimo/massimo</li>
+            <li><span class="dot focus"></span> <strong>Fuoco F</strong> — punto interno alla curva</li>
+            <li><span class="dot axis"></span> <strong>Asse di simmetria</strong> — x = −b/2a</li>
+            <li><span class="dot directrix"></span> <strong>Direttrice</strong> — retta esterna alla curva</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GRAFICO INTERATTIVO -->
+  <section id="grafico" class="section section-dark">
+    <div class="container">
+      <h2 class="section-title light">Grafico Interattivo</h2>
+      <p class="section-sub light">Muovi i cursori per cambiare i coefficienti e osserva come cambia la parabola in tempo reale.</p>
+
+      <div class="interactive-wrap">
+        <!-- Controls -->
+        <div class="controls-panel">
+          <div class="control-group">
+            <label>
+              <span class="coeff">a</span> = <span id="val-a" class="val-display">1.00</span>
+            </label>
+            <input type="range" id="slider-a" min="-3" max="3" step="0.1" value="1" />
+            <div class="hint">Apre verso l'alto (a &gt; 0) o verso il basso (a &lt; 0)</div>
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="coeff">b</span> = <span id="val-b" class="val-display">0.00</span>
+            </label>
+            <input type="range" id="slider-b" min="-5" max="5" step="0.1" value="0" />
+            <div class="hint">Sposta lateralmente il vertice</div>
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="coeff">c</span> = <span id="val-c" class="val-display">0.00</span>
+            </label>
+            <input type="range" id="slider-c" min="-5" max="5" step="0.1" value="0" />
+            <div class="hint">Sposta verticalmente la parabola</div>
+          </div>
+
+          <div class="info-panel">
+            <div class="info-row">
+              <span>Equazione:</span>
+              <strong id="eq-display">y = x²</strong>
+            </div>
+            <div class="info-row">
+              <span>Vertice:</span>
+              <strong id="vertex-display">V(0, 0)</strong>
+            </div>
+            <div class="info-row">
+              <span>Fuoco:</span>
+              <strong id="focus-display">F(0, 0.25)</strong>
+            </div>
+            <div class="info-row">
+              <span>Direttrice:</span>
+              <strong id="directrix-display">y = -0.25</strong>
+            </div>
+            <div class="info-row">
+              <span>Asse simm.:</span>
+              <strong id="axis-display">x = 0</strong>
+            </div>
+            <div class="info-row">
+              <span>Concavità:</span>
+              <strong id="concavity-display">↑ verso l'alto</strong>
+            </div>
+          </div>
+
+          <div class="checkboxes">
+            <label class="cb-label"><input type="checkbox" id="show-vertex" checked /> Vertice</label>
+            <label class="cb-label"><input type="checkbox" id="show-focus" checked /> Fuoco</label>
+            <label class="cb-label"><input type="checkbox" id="show-directrix" checked /> Direttrice</label>
+            <label class="cb-label"><input type="checkbox" id="show-axis" checked /> Asse simm.</label>
+            <label class="cb-label"><input type="checkbox" id="show-roots" checked /> Radici</label>
+          </div>
+
+          <button id="reset-btn" class="btn-secondary">↺ Reset</button>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-wrap">
+          <canvas id="parabola-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROPRIETA' -->
+  <section id="proprieta" class="section section-light">
+    <div class="container">
+      <h2 class="section-title">Proprietà Chiave</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="vertice">Vertice</button>
+        <button class="tab-btn" data-tab="fuoco">Fuoco & Direttrice</button>
+        <button class="tab-btn" data-tab="radici">Radici</button>
+        <button class="tab-btn" data-tab="forma">Forme</button>
+      </div>
+
+      <div class="tab-content active" id="tab-vertice">
+        <div class="prop-layout">
+          <div class="prop-text">
+            <h3>Il Vertice</h3>
+            <p>Il vertice è il punto in cui la parabola cambia direzione. È il punto di <strong>minimo</strong> se a > 0, di <strong>massimo</strong> se a < 0.</p>
+            <div class="formula-box large">
+              V = ( −b/2a, −Δ/4a )
+            </div>
+            <p>dove <strong>Δ = b² − 4ac</strong> è il discriminante.</p>
+            <p>La <strong>forma vertice</strong> è:</p>
+            <div class="formula-box">
+              y = a(x − h)² + k
+            </div>
+            <p>con V = (h, k)</p>
+          </div>
+          <div class="prop-visual" id="visual-vertice"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-fuoco">
+        <div class="prop-layout">
+          <div class="prop-text">
+            <h3>Fuoco e Direttrice</h3>
+            <p>Il <strong>fuoco F</strong> e la <strong>direttrice d</strong> definiscono la parabola geometricamente. Il parametro <em>p</em> è la distanza dal vertice al fuoco.</p>
+            <div class="formula-box large">
+              p = 1 / (4a)
+            </div>
+            <div class="formula-box">
+              F = ( −b/2a, k + p ) &nbsp;|&nbsp; d: y = k − p
+            </div>
+            <p>Proprietà <strong>riflessiva</strong>: i raggi paralleli all'asse convergono tutti nel fuoco — questo è il principio usato nei telescopi e nelle antenne paraboliche!</p>
+          </div>
+          <div class="prop-visual" id="visual-fuoco"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-radici">
+        <div class="prop-layout">
+          <div class="prop-text">
+            <h3>Radici (Zeri)</h3>
+            <p>Le radici sono i punti in cui la parabola interseca l'asse x (y = 0). Si trovano con la <strong>formula quadratica</strong>:</p>
+            <div class="formula-box large">
+              x = (−b ± √Δ) / 2a
+            </div>
+            <p>Il <strong>discriminante Δ = b² − 4ac</strong> determina il numero di soluzioni:</p>
+            <div class="delta-cases">
+              <div class="delta-case positive">
+                <div class="delta-symbol">Δ &gt; 0</div>
+                <div>2 radici reali distinte</div>
+                <div class="delta-sub">La parabola interseca x in 2 punti</div>
+              </div>
+              <div class="delta-case zero">
+                <div class="delta-symbol">Δ = 0</div>
+                <div>1 radice reale doppia</div>
+                <div class="delta-sub">Il vertice tocca l'asse x</div>
+              </div>
+              <div class="delta-case negative">
+                <div class="delta-symbol">Δ &lt; 0</div>
+                <div>Nessuna radice reale</div>
+                <div class="delta-sub">La parabola non tocca l'asse x</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-forma">
+        <div class="prop-layout">
+          <div class="prop-text">
+            <h3>Forme equivalenti</h3>
+            <div class="forms-grid">
+              <div class="form-card">
+                <div class="form-name">Forma standard</div>
+                <div class="formula-box">y = ax² + bx + c</div>
+                <p>Immediata per leggere <em>c</em> (intercetta y)</p>
+              </div>
+              <div class="form-card">
+                <div class="form-name">Forma vertice</div>
+                <div class="formula-box">y = a(x − h)² + k</div>
+                <p>Immediata per leggere il vertice V(h, k)</p>
+              </div>
+              <div class="form-card">
+                <div class="form-name">Forma fattorizzata</div>
+                <div class="formula-box">y = a(x − x₁)(x − x₂)</div>
+                <p>Immediata per leggere le radici x₁, x₂</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APPLICAZIONI -->
+  <section id="applicazioni" class="section section-accent">
+    <div class="container">
+      <h2 class="section-title light">La Parabola nel Mondo Reale</h2>
+      <div class="apps-grid">
+        <div class="app-card">
+          <div class="app-emoji">🔭</div>
+          <h3>Telescopi & Antenne</h3>
+          <p>Gli specchi parabolici concentrano la luce (o le onde radio) nel fuoco, sfruttando la proprietà riflessiva della parabola.</p>
+        </div>
+        <div class="app-card">
+          <div class="app-emoji">⚽</div>
+          <h3>Traiettoria dei Proiettili</h3>
+          <p>In assenza di resistenza dell'aria, un corpo lanciato segue una traiettoria parabolica determinata dalla gravità.</p>
+        </div>
+        <div class="app-card">
+          <div class="app-emoji">🌉</div>
+          <h3>Ponti Sospesi</h3>
+          <p>I cavi principali dei ponti sospesi, sotto carico uniforme, assumono la forma di una parabola.</p>
+        </div>
+        <div class="app-card">
+          <div class="app-emoji">☀️</div>
+          <h3>Pannelli Solari</h3>
+          <p>I concentratori solari parabolici riflettono i raggi del sole verso il tubo ricevitore posizionato nel fuoco.</p>
+        </div>
+        <div class="app-card">
+          <div class="app-emoji">🏗️</div>
+          <h3>Archi Architettonici</h3>
+          <p>Molti archi in cemento o acciaio seguono profili parabolici per distribuire ottimamente le forze strutturali.</p>
+        </div>
+        <div class="app-card">
+          <div class="app-emoji">💡</div>
+          <h3>Fanali & Fari</h3>
+          <p>Il riflettore di un faro o di un proiettore ha forma parabolica: la sorgente nel fuoco produce un fascio parallelo.</p>
+        </div>
+      </div>
+
+      <!-- Simulatore traiettoria -->
+      <div class="trajectory-wrap">
+        <h3 class="traj-title">Simula una traiettoria balistica</h3>
+        <div class="traj-controls">
+          <div class="traj-control">
+            <label>Velocità iniziale: <span id="vel-display">20</span> m/s</label>
+            <input type="range" id="vel-slider" min="5" max="40" value="20" />
+          </div>
+          <div class="traj-control">
+            <label>Angolo: <span id="angle-display">45</span>°</label>
+            <input type="range" id="angle-slider" min="5" max="85" value="45" />
+          </div>
+          <button id="launch-btn" class="btn-primary">🚀 Lancia!</button>
+        </div>
+        <canvas id="trajectory-canvas"></canvas>
+        <div id="traj-info" class="traj-info"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="section section-light">
+    <div class="container">
+      <h2 class="section-title">Metti alla prova le tue conoscenze!</h2>
+      <div id="quiz-container">
+        <div id="quiz-progress">
+          <div id="progress-bar"><div id="progress-fill"></div></div>
+          <span id="progress-text">Domanda 1 di 8</span>
+        </div>
+        <div id="question-card" class="question-card">
+          <div id="question-text" class="question-text"></div>
+          <div id="options-grid" class="options-grid"></div>
+          <div id="feedback" class="feedback hidden"></div>
+          <button id="next-btn" class="btn-primary hidden">Prossima domanda →</button>
+        </div>
+        <div id="quiz-result" class="quiz-result hidden">
+          <div id="result-emoji" class="result-emoji"></div>
+          <h3 id="result-title"></h3>
+          <p id="result-score"></p>
+          <p id="result-msg"></p>
+          <button id="restart-btn" class="btn-primary">↺ Ricomincia il quiz</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <span class="logo-text">⚗️ Fosforo<strong>Scienza</strong></span>
+      <p>Modulo interattivo sulla Parabola — Matematica per tutti</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
