@@ -368,112 +368,233 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 /* ------------------------------------------------
-   TRAJECTORY SIMULATOR
+   TRAJECTORY SIMULATOR — con animazione
    ------------------------------------------------ */
 (function initTrajectory() {
   const canvas = document.getElementById('trajectory-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const g = 9.81;
+  const STEPS = 300;
+  const ANIM_DURATION = 2200; // ms totali per percorrere la traiettoria
+
   let animId = null;
+  let currentPoints = [];
+  let currentMeta = {};
+  let margin = 40;
 
-  function resize() {
-    canvas.width = canvas.offsetWidth;
-    canvas.height = 280;
-  }
-
-  const velSlider = document.getElementById('vel-slider');
+  const velSlider   = document.getElementById('vel-slider');
   const angleSlider = document.getElementById('angle-slider');
-  const velDisplay = document.getElementById('vel-display');
+  const velDisplay   = document.getElementById('vel-display');
   const angleDisplay = document.getElementById('angle-display');
+  const launchBtn    = document.getElementById('launch-btn');
+  const info         = document.getElementById('traj-info');
 
-  velSlider.addEventListener('input', () => { velDisplay.textContent = velSlider.value; });
+  velSlider.addEventListener('input',   () => { velDisplay.textContent   = velSlider.value; });
   angleSlider.addEventListener('input', () => { angleDisplay.textContent = angleSlider.value; });
 
-  function computeTrajectory(v0, angleDeg) {
-    const theta = angleDeg * Math.PI / 180;
-    const vx = v0 * Math.cos(theta);
-    const vy = v0 * Math.sin(theta);
-    const tFlight = 2 * vy / g;
-    const xMax = vx * tFlight;
-    const yMax = (vy * vy) / (2 * g);
-    const points = [];
-    const steps = 200;
-    for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * tFlight;
-      const x = vx * t;
-      const y = vy * t - 0.5 * g * t * t;
-      points.push({ x, y });
-    }
-    return { points, tFlight, xMax, yMax };
+  /* ---- dimensioni canvas ---- */
+  function getSize() {
+    const w = canvas.parentElement ? canvas.parentElement.clientWidth || 600 : 600;
+    return { W: Math.max(w, 200), H: 280 };
   }
 
-  function drawTrajectory(v0, angleDeg) {
-    resize();
-    const W = canvas.width, H = canvas.height;
+  function ensureSize() {
+    const { W, H } = getSize();
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas.width  = W;
+      canvas.height = H;
+    }
+  }
+
+  /* ---- fisica ---- */
+  function compute(v0, angleDeg) {
+    const theta   = angleDeg * Math.PI / 180;
+    const vx      = v0 * Math.cos(theta);
+    const vy      = v0 * Math.sin(theta);
+    const tFlight = 2 * vy / g;
+    const xMax    = vx * tFlight;
+    const yMax    = (vy * vy) / (2 * g);
+    const points  = [];
+    for (let i = 0; i <= STEPS; i++) {
+      const t = (i / STEPS) * tFlight;
+      points.push({ x: vx * t, y: vy * t - 0.5 * g * t * t,
+                    vx, vy: vy - g * t });
+    }
+    return { points, tFlight, xMax, yMax, vx, vy0: vy };
+  }
+
+  /* ---- coordinate schermo ---- */
+  function makeSc(W, H, xMax, yMax) {
+    const scaleX = (W - margin * 2) / xMax;
+    const scaleY = (H - margin * 2) / (yMax * 1.2);
+    return (x, y) => [margin + x * scaleX, H - margin - y * scaleY];
+  }
+
+  /* ---- disegno frame ---- */
+  function drawFrame(progress) {
+    ensureSize();
+    const { W, H } = getSize();
+    const { points, xMax, yMax, tFlight } = currentMeta;
+    if (!points || points.length === 0) return;
+
+    const sc = makeSc(W, H, xMax, yMax);
     ctx.clearRect(0, 0, W, H);
 
-    const { points, tFlight, xMax, yMax } = computeTrajectory(v0, angleDeg);
+    const idx = Math.min(Math.floor(progress * STEPS), STEPS);
 
-    // scale
-    const margin = 40;
-    const scaleX = (W - margin * 2) / xMax;
-    const scaleY = (H - margin * 2) / (yMax * 1.15);
-
-    function sc(x, y) {
-      return [margin + x * scaleX, H - margin - y * scaleY];
-    }
-
-    // ground
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    /* terreno */
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(margin, H - margin); ctx.lineTo(W - margin, H - margin); ctx.stroke();
+    const [gx0] = sc(0, 0); const [gx1] = sc(xMax, 0);
+    const [, gy] = sc(0, 0);
+    ctx.beginPath(); ctx.moveTo(gx0, gy); ctx.lineTo(gx1, gy); ctx.stroke();
 
-    // parabola
+    /* traccia completa (sfumata) */
     ctx.beginPath();
-    ctx.strokeStyle = '#f0b429';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#f0b429';
-    ctx.shadowBlur = 8;
+    ctx.strokeStyle = 'rgba(240,180,41,0.18)';
+    ctx.lineWidth = 2;
     points.forEach((p, i) => {
       const [px, py] = sc(p.x, p.y);
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     });
     ctx.stroke();
-    ctx.shadowBlur = 0;
 
-    // max height dotted line
-    const [hx, hy] = sc(xMax / 2, yMax);
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.moveTo(hx, hy); ctx.lineTo(hx, H - margin);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    /* traccia percorsa finora */
+    if (idx > 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = '#f0b429';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#f0b429';
+      ctx.shadowBlur = 10;
+      for (let i = 0; i <= idx; i++) {
+        const [px, py] = sc(points[i].x, points[i].y);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
 
-    // labels
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.font = 'bold 11px Courier New';
-    ctx.textAlign = 'center';
-    ctx.fillText(`↕ ${yMax.toFixed(1)} m`, hx, hy - 8);
+    /* linea altezza massima (appare quando si raggiunge il top) */
+    if (progress >= 0.5) {
+      const [hx, hy] = sc(xMax / 2, yMax);
+      const alpha = Math.min(1, (progress - 0.5) * 4);
+      ctx.strokeStyle = `rgba(255,255,255,${0.3 * alpha})`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx, H - margin); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = `rgba(255,255,255,${0.8 * alpha})`;
+      ctx.font = 'bold 11px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(`↕ ${yMax.toFixed(1)} m`, hx, hy - 10);
+    }
 
-    ctx.textAlign = 'center';
-    const [lx, ly] = sc(xMax, 0);
-    ctx.fillText(`↔ ${xMax.toFixed(1)} m`, margin + (W - margin * 2) / 2, H - 6);
+    /* pallina con scia */
+    if (idx > 0) {
+      const trailLen = 12;
+      for (let t = Math.max(0, idx - trailLen); t < idx; t++) {
+        const a = (t - (idx - trailLen)) / trailLen;
+        const [tx, ty] = sc(points[t].x, points[t].y);
+        ctx.beginPath();
+        ctx.arc(tx, ty, 3 * a, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(240,180,41,${0.3 * a})`;
+        ctx.fill();
+      }
+      const [bx, by] = sc(points[idx].x, points[idx].y);
+      /* alone */
+      ctx.beginPath();
+      ctx.arc(bx, by, 10, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(240,180,41,0.25)';
+      ctx.fill();
+      /* pallina */
+      ctx.beginPath();
+      ctx.arc(bx, by, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#f0b429';
+      ctx.shadowColor = '#f0b429';
+      ctx.shadowBlur = 14;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
 
-    // start dot
+    /* punto di partenza */
     const [sx0, sy0] = sc(0, 0);
     ctx.beginPath(); ctx.arc(sx0, sy0, 6, 0, Math.PI * 2);
     ctx.fillStyle = '#6c3ce3'; ctx.fill();
 
-    // end dot
-    const [sxE, syE] = sc(xMax, 0);
-    ctx.beginPath(); ctx.arc(sxE, syE, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#e94560'; ctx.fill();
+    /* punto di atterraggio (appare alla fine) */
+    if (progress >= 0.98) {
+      const [sxE, syE] = sc(xMax, 0);
+      ctx.beginPath(); ctx.arc(sxE, syE, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#e94560';
+      ctx.shadowColor = '#e94560'; ctx.shadowBlur = 12;
+      ctx.fill(); ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      /* etichetta gittata */
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = 'bold 11px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(`↔ ${xMax.toFixed(1)} m`, margin + (W - margin * 2) / 2, H - 6);
+    }
 
-    // info
-    const info = document.getElementById('traj-info');
+    /* info in tempo reale */
+    const t_now = (idx / STEPS) * tFlight;
+    const p = points[idx];
+    const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy).toFixed(1);
+    info.innerHTML = `
+      <span>⏱ t = ${t_now.toFixed(2)} s</span>
+      <span>↔ x = ${p.x.toFixed(1)} m</span>
+      <span>↑ y = ${p.y.toFixed(1)} m</span>
+      <span>⚡ v = ${speed} m/s</span>
+    `;
+  }
+
+  /* ---- animazione ---- */
+  function animate(v0, angleDeg) {
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+
+    currentMeta = compute(v0, angleDeg);
+    currentPoints = currentMeta.points;
+
+    const { tFlight, xMax, yMax } = currentMeta;
+
+    launchBtn.disabled = true;
+    launchBtn.textContent = '🚀 In volo...';
+
+    const startTime = performance.now();
+
+    function frame(now) {
+      const elapsed  = now - startTime;
+      const progress = Math.min(elapsed / ANIM_DURATION, 1);
+      drawFrame(progress);
+
+      if (progress < 1) {
+        animId = requestAnimationFrame(frame);
+      } else {
+        animId = null;
+        launchBtn.disabled = false;
+        launchBtn.textContent = '🚀 Lancia!';
+        /* info finale */
+        info.innerHTML = `
+          <span>⏱ Tempo volo: ${tFlight.toFixed(2)} s</span>
+          <span>↔ Gittata: ${xMax.toFixed(1)} m</span>
+          <span>↑ Altezza max: ${yMax.toFixed(1)} m</span>
+          <span>📐 Angolo ottimale: 45°</span>
+        `;
+      }
+    }
+    animId = requestAnimationFrame(frame);
+  }
+
+  /* ---- preview statico (slider drag) ---- */
+  function drawStatic(v0, angleDeg) {
+    if (animId) return; // non interrompere animazione in corso
+    currentMeta = compute(v0, angleDeg);
+    drawFrame(1); // mostra tutto completato
+    const { tFlight, xMax, yMax } = currentMeta;
     info.innerHTML = `
       <span>⏱ Tempo volo: ${tFlight.toFixed(2)} s</span>
       <span>↔ Gittata: ${xMax.toFixed(1)} m</span>
@@ -482,18 +603,17 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     `;
   }
 
-  document.getElementById('launch-btn').addEventListener('click', () => {
-    const v0 = parseFloat(velSlider.value);
-    const angle = parseFloat(angleSlider.value);
-    drawTrajectory(v0, angle);
-  });
+  velSlider.addEventListener('input',   () => drawStatic(+velSlider.value, +angleSlider.value));
+  angleSlider.addEventListener('input', () => drawStatic(+velSlider.value, +angleSlider.value));
 
-  // initial draw
-  resize();
-  drawTrajectory(20, 45);
-  window.addEventListener('resize', () => drawTrajectory(
-    parseFloat(velSlider.value), parseFloat(angleSlider.value)
-  ));
+  launchBtn.addEventListener('click', () => animate(+velSlider.value, +angleSlider.value));
+
+  /* ---- draw iniziale (ritardato per garantire larghezza corretta) ---- */
+  setTimeout(() => drawStatic(20, 45), 100);
+
+  window.addEventListener('resize', () => {
+    if (!animId) drawStatic(+velSlider.value, +angleSlider.value);
+  });
 })();
 
 /* ------------------------------------------------
