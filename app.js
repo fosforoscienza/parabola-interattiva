@@ -33,21 +33,30 @@ function fmtCoeff(n, showPlus = false) {
     H = canvas.height = canvas.offsetHeight;
   }
 
+  // Palette Fosforo: blu #41B7FF e magenta #CC0066
+  const HERO_COLORS = [
+    [201, 100, 65],  // blu fosforo  hsl(201,100%,65%) ≈ #41B7FF
+    [201, 100, 75],  // blu chiaro
+    [322,  90, 50],  // magenta      hsl(322,90%,50%)  ≈ #CC0066
+    [190,  80, 60],  // azzurro
+  ];
+
   function makeCurve() {
+    const col = HERO_COLORS[Math.floor(Math.random() * HERO_COLORS.length)];
     return {
       a: (Math.random() - 0.5) * 0.003,
       cx: Math.random() * W,
       cy: Math.random() * H * 0.5 + H * 0.25,
       speed: (Math.random() - 0.5) * 0.3,
-      alpha: Math.random() * 0.3 + 0.05,
-      hue: Math.floor(Math.random() * 60) + 200, // blue-purple range
+      alpha: Math.random() * 0.28 + 0.04,
+      hue: col[0], sat: col[1], lit: col[2],
       width: Math.random() * 1.5 + 0.5,
     };
   }
 
   function drawCurve(c) {
     ctx.beginPath();
-    ctx.strokeStyle = `hsla(${c.hue}, 80%, 65%, ${c.alpha})`;
+    ctx.strokeStyle = `hsla(${c.hue}, ${c.sat}%, ${c.lit}%, ${c.alpha})`;
     ctx.lineWidth = c.width;
     for (let x = 0; x <= W; x += 3) {
       const dx = x - c.cx;
@@ -139,10 +148,10 @@ function fmtCoeff(n, showPlus = false) {
   function drawParabola() {
     if (Math.abs(a) < 0.001) return;
     ctx.beginPath();
-    ctx.strokeStyle = '#a78bfa';
+    ctx.strokeStyle = '#41B7FF';
     ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#6c3ce3';
-    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#41B7FF';
+    ctx.shadowBlur = 10;
 
     let first = true;
     for (let px = 0; px <= W; px++) {
@@ -194,7 +203,7 @@ function fmtCoeff(n, showPlus = false) {
     if (showAxis) {
       const [sx] = toScreen(h, 0);
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(167,139,250,0.5)';
+      ctx.strokeStyle = 'rgba(65,183,255,0.35)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.moveTo(sx, 0); ctx.lineTo(sx, H);
@@ -246,12 +255,12 @@ function fmtCoeff(n, showPlus = false) {
       if (sy >= -10 && sy <= H + 10) {
         ctx.beginPath();
         ctx.arc(sx, sy, 5, 0, Math.PI * 2);
-        ctx.fillStyle = '#e94560';
+        ctx.fillStyle = '#CC0066';
         ctx.fill();
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1.5;
         ctx.stroke();
-        ctx.fillStyle = '#e94560';
+        ctx.fillStyle = '#CC0066';
         ctx.font = '11px Courier New';
         ctx.textAlign = 'left';
         ctx.fillText(`F(${fmt(fx)}, ${fmt(fy)})`, sx + 10, sy + 4);
@@ -452,7 +461,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
     /* traccia completa (sfumata) */
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(240,180,41,0.18)';
+    ctx.strokeStyle = 'rgba(65,183,255,0.15)';
     ctx.lineWidth = 2;
     points.forEach((p, i) => {
       const [px, py] = sc(p.x, p.y);
@@ -463,9 +472,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     /* traccia percorsa finora */
     if (idx > 0) {
       ctx.beginPath();
-      ctx.strokeStyle = '#f0b429';
+      ctx.strokeStyle = '#41B7FF';
       ctx.lineWidth = 2.5;
-      ctx.shadowColor = '#f0b429';
+      ctx.shadowColor = '#41B7FF';
       ctx.shadowBlur = 10;
       for (let i = 0; i <= idx; i++) {
         const [px, py] = sc(points[i].x, points[i].y);
@@ -498,20 +507,20 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         const [tx, ty] = sc(points[t].x, points[t].y);
         ctx.beginPath();
         ctx.arc(tx, ty, 3 * a, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(240,180,41,${0.3 * a})`;
+        ctx.fillStyle = `rgba(65,183,255,${0.3 * a})`;
         ctx.fill();
       }
       const [bx, by] = sc(points[idx].x, points[idx].y);
       /* alone */
       ctx.beginPath();
       ctx.arc(bx, by, 10, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(240,180,41,0.25)';
+      ctx.fillStyle = 'rgba(65,183,255,0.22)';
       ctx.fill();
       /* pallina */
       ctx.beginPath();
       ctx.arc(bx, by, 6, 0, Math.PI * 2);
-      ctx.fillStyle = '#f0b429';
-      ctx.shadowColor = '#f0b429';
+      ctx.fillStyle = '#41B7FF';
+      ctx.shadowColor = '#41B7FF';
       ctx.shadowBlur = 14;
       ctx.fill();
       ctx.shadowBlur = 0;
@@ -523,14 +532,14 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     /* punto di partenza */
     const [sx0, sy0] = sc(0, 0);
     ctx.beginPath(); ctx.arc(sx0, sy0, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#6c3ce3'; ctx.fill();
+    ctx.fillStyle = '#41B7FF'; ctx.fill();
 
     /* punto di atterraggio (appare alla fine) */
     if (progress >= 0.98) {
       const [sxE, syE] = sc(xMax, 0);
       ctx.beginPath(); ctx.arc(sxE, syE, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#e94560';
-      ctx.shadowColor = '#e94560'; ctx.shadowBlur = 12;
+      ctx.fillStyle = '#CC0066';
+      ctx.shadowColor = '#CC0066'; ctx.shadowBlur = 12;
       ctx.fill(); ctx.shadowBlur = 0;
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
       /* etichetta gittata */
